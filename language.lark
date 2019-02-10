@@ -1,0 +1,34 @@
+%ignore " "
+%ignore /\t/
+_newline: /\n/+ //define line change as one or more \n to allow empty lines 
+start: START _newline process* END
+process: PROCESS _newline userstep? _newline steps END _newline
+steps: (step _newline)*
+step: COMMAND /\w+/+
+    | checkstep
+    | parallelstep
+    | SEND NAME
+checkstep : TRY _newline steps CHECK /\w+/+ _newline yes _newline no _newline END
+yes: YES _newline steps [(RETRY | ABORT) _newline] END
+no: NO _newline steps [(RETRY | ABORT) _newline] END
+parallelstep: PARALLEL _newline steps END
+userstep: USERS _newline (DIVISION DEPARTMENT NAME+ _newline)+ END
+
+
+PROCESS: "process"
+USERS: "users"
+NAME: /[a-zA-Z]+/ //at least one or more alphabetic characters 
+ROLE: "role1" | "role2" | "role3" //placeholders
+DIVISION: "div1" | "div2" | "div3" //placeholders
+DEPARTMENT: "dep1" | "dep2" | "dep3" //placeholders
+TRY: "try"
+CHECK: "check"
+YES: "yes"
+NO: "no"
+RETRY: "retry"
+ABORT: "abort"
+PARALLEL: "parallel"
+SEND: "send to"
+END: "end"
+START: "start"
+COMMAND: "command1" | "command2" | "command3" //placeholders
