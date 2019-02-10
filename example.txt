@@ -1,0 +1,25 @@
+start
+    process
+        users
+            div1 dep1 Firstname Lastname
+        end
+        command1 blah blah
+        command2 bleh
+        parallel
+            command1 blah blah blah
+            command2 bleh
+        end
+        try
+            command1 blah blah
+            command2 bleh
+        check a condition
+            yes
+                command1 f
+            end
+            no
+                command2 fr
+                retry
+            end
+        end
+    end
+end
