@@ -4,7 +4,7 @@ _newline: /\n/+ //define line change as one or more \n to allow empty lines
 start: START _newline process* END
 process: PROCESS /\w+/ _newline [userstep _newline] steps END _newline
 steps: (step _newline)*
-step: COMMAND /\w+/+
+step: COMMAND /\w+/+ -> command
     | checkstep
     | parallelstep
     | process
