@@ -2,16 +2,21 @@
 %ignore /\t/
 _newline: /\n/+ //define line change as one or more \n to allow empty lines 
 start: START _newline process* END
-process: PROCESS _newline userstep? _newline steps END _newline
+process: PROCESS /\w+/ _newline [userstep _newline] steps END _newline
 steps: (step _newline)*
 step: COMMAND /\w+/+
     | checkstep
     | parallelstep
-    | SEND NAME
+    | process
+    | callstep //executes the steps of a predifined process 
+    | sendstep
+    | CONTINUE //does nothing and exists for visual purposes instead of leaving a code part empty 
 checkstep : TRY _newline steps CHECK /\w+/+ _newline yes _newline no _newline END
 yes: YES _newline steps [(RETRY | ABORT) _newline] END
 no: NO _newline steps [(RETRY | ABORT) _newline] END
 parallelstep: PARALLEL _newline steps END
+callstep: CALL /\w+/
+sendstep: SEND NAME
 userstep: USERS _newline (DIVISION DEPARTMENT NAME+ _newline)+ END
 
 
@@ -27,8 +32,10 @@ YES: "yes"
 NO: "no"
 RETRY: "retry"
 ABORT: "abort"
+CONTINUE: "continue"
 PARALLEL: "parallel"
 SEND: "send to"
+CALL: "call"
 END: "end"
 START: "start"
 COMMAND: "command1" | "command2" | "command3" //placeholders
