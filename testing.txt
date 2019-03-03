@@ -1,0 +1,13 @@
+start
+    process main
+        parallel
+            parallel
+                command1 blah blah blah
+                command2 bleh
+            end
+            command1 boi
+        end
+        command1 one
+        command2 two
+    end
+end
