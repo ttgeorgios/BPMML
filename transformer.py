@@ -16,15 +16,12 @@ class ReduceTree(Transformer):
         for token in args:
             if str(token) != '\n': #discarding the line change character
                 steps.append(token)
-        return {"type":"defaultSteps", "commands":steps}
+        return steps
 
     # if a parallelstep node is read, we transform the parallelstep subtree to a dictionary.
     def parallelstep(self, args):
-        parallel = []
-        for token in args[1:-1]: #we already know that we don't need the args[0] (= "parallel") and args[-1] (= "end")
-            if str(token) != '\n': #discarding the line change character
-                parallel.append(token)
-        return {"type":"parallelSteps", "commands":parallel}
+        # we simply need to return the args[2] as everything was already transformed as "steps" (args[0] = "parallel", args[1] = /n, args[2] = steps list from steps transformer)
+        return {"type":"parallelSteps", "commands":args[2]}
 
     # if a process node is read, we worked our way to the top therefore we can now extract the json (not supporting process calling yet)
     def process(self, args):
