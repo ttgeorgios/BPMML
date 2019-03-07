@@ -1,6 +1,9 @@
 from graphviz import Digraph
 import json
 import os
+
+# this is the path of Graphviz in Windows OS, you can change it accordingly 
+# linux users should be good from the get-go ( sudo apt-get install graphviz )
 os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
 
 g = Digraph('G', filename='graph')
@@ -12,7 +15,7 @@ class Graph:
         self.counter = 0
         self.startingNode = startingNode
         self.data = data
-        self.createGraph(startingNode, data, True)
+        self.createGraph(startingNode, data)
 
     def createSimpleNode(self, name, label):
         g.node(name, label, shape="box", style="rounded, filled", fillcolor="yellow2")
@@ -23,7 +26,7 @@ class Graph:
         else:
             g.node(name, label, shape="diamond", fontsize="12", height="0", width="0", style="filled", fillcolor="orange2")
 
-    def createGraph(self, previousNode, nodeList, isLinear):
+    def createGraph(self, previousNode, nodeList):
         for entry in nodeList:
             self.counter+=1
             name = str(self.counter)
@@ -63,7 +66,7 @@ class Graph:
                 g.edge(name, parallelEnd)
                     
 
-with open('data.json') as f:
+with open('../data.json') as f:
     data = json.load(f)
 
 g.node('start',"", shape='circle', width="0.3", style="filled", fillcolor="palegreen1")
