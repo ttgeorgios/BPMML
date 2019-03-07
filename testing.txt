@@ -1,13 +1,30 @@
 start
     process main
+
+
+
         parallel
+
+
             parallel
                 command1 blah blah blah
                 command2 bleh
             end
+
+
+
             command1 boi
+            parallel
+                command1 blah blah blah
+                command2 bleh
+            end
         end
         command1 one
+
         command2 two
+        parallel
+            command1 blah blah blah
+            command2 bleh
+        end
     end
 end

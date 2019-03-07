@@ -20,13 +20,18 @@ class ReduceTree(Transformer):
 
     # if a parallelstep node is read, we transform the parallelstep subtree to a dictionary.
     def parallelstep(self, args):
-        # we simply need to return the args[2] as everything was already transformed as "steps" (args[0] = "parallel", args[1] = /n, args[2] = steps list from steps transformer)
-        return {"type":"parallelSteps", "commands":args[2]}
+        # we need to check and return the first node that is not a linechange as we allow empty lines
+        for data in args[2:-1]:
+            if data != '\n':
+                return {"type":"parallelSteps", "commands":data}
 
     # if a process node is read, we worked our way to the top therefore we can now extract the json (not supporting process calling yet)
     def process(self, args):
         with open("data.json", "w") as output:
-            json.dump(args[3], output) #args[3] will always contain the transformed subtree
+            for data in args[3:-1]:
+                if data != '\n':
+                    json.dump(data, output)
+                    return 1
 
 print("Loading Language")
 parser = Lark(open("language.lark", "r"))
