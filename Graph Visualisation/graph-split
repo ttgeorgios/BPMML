@@ -1,0 +1,77 @@
+digraph G {
+	rankdir=LR ratio=compress
+	start [label="" fillcolor=palegreen1 shape=circle style=filled width=0.3]
+	1 [label="div1 dep1 pos1 Firstname Lastname" fillcolor=cyan fontsize=10 margin=0.2 shape=cds style=filled]
+	start -> 1 [arrowhead=none]
+	2 [label="command1 main_command1" fillcolor=yellow2 shape=box style="rounded, filled"]
+	1 -> 2
+	3 [label="command2 main_command2" fillcolor=yellow2 shape=box style="rounded, filled"]
+	2 -> 3
+	4 [label="Process
+subProcess1" fillcolor=cadetblue1 shape=box3d style=filled]
+	3 -> 4
+	subgraph cluster_5 {
+		label=subProcess1
+		5 [label="" shape=none]
+		6 [label="div1 dep1 pos1 Firstname Lastname" fillcolor=cyan fontsize=10 margin=0.2 shape=cds style=filled]
+		5 -> 6 [arrowhead=none]
+		7 [label="command2 subProcess1_command1" fillcolor=yellow2 shape=box style="rounded, filled"]
+		6 -> 7
+		8 [label="" shape=none]
+		7 -> 8
+	}
+	9 [label="Process
+subProcess2" fillcolor=cadetblue1 shape=box3d style=filled]
+	4 -> 9
+	subgraph cluster_10 {
+		label=subProcess2
+		10 [label="" shape=none]
+		11 [label="command1 subProcess2_command1" fillcolor=yellow2 shape=box style="rounded, filled"]
+		10 -> 11
+		12 [label="command2 subProcess2_command2" fillcolor=yellow2 shape=box style="rounded, filled"]
+		11 -> 12
+		13 [label="" shape=none]
+		12 -> 13
+	}
+	14 [label="" shape=point]
+	9 -> 14
+	15 [label="+" fillcolor=orange2 fontsize=12 height=0 shape=diamond style=filled width=0]
+	16 [label="" shape=point]
+	14 -> 16
+	17 [label="+" fillcolor=orange2 fontsize=12 height=0 shape=diamond style=filled width=0]
+	18 [label="command1 parallel_command1" fillcolor=yellow2 shape=box style="rounded, filled"]
+	16 -> 18
+	18 -> 17
+	19 [label="command2 parallel_command2" fillcolor=yellow2 shape=box style="rounded, filled"]
+	16 -> 19
+	19 -> 17
+	17 -> 15
+	21 [label="command1 invisibleProcess_command1" fillcolor=yellow2 shape=box style="rounded, filled"]
+	14 -> 21
+	22 [label="command2 invisibleProcess_command2" fillcolor=yellow2 shape=box style="rounded, filled"]
+	21 -> 22
+	22 -> 15
+	24 [label="div1 dep1 pos1 FirstnameB LastnameB
+div1 dep1 pos1 FirstnameC LastnameC" fillcolor=cyan fontsize=10 margin=0.2 shape=cds style=filled]
+	15 -> 24 [arrowhead=none]
+	25 [shape=point]
+	24 -> 25
+	26 [shape=point]
+	27 [label="command1 try_command1" fillcolor=yellow2 shape=box style="rounded, filled"]
+	25 -> 27
+	28 [label="command2 try_command2" fillcolor=yellow2 shape=box style="rounded, filled"]
+	27 -> 28
+	29 [label=condition fillcolor=orange2 shape=diamond style=filled]
+	28 -> 29
+	yesdot30 [shape=point]
+	29 -> yesdot30 [label=yes]
+	yesdot30 -> 26
+	nodot31 [shape=point]
+	29 -> nodot31 [label=no]
+	32 [label="command2 no_command1" fillcolor=yellow2 shape=box style="rounded, filled"]
+	nodot31 -> 32
+	32 -> 25
+	end [label="" fillcolor=red3 shape=circle style=filled width=0.3]
+	26 -> end
+	label=example
+}

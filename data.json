@@ -1,0 +1,154 @@
+{
+    "type": "process",
+    "name": "main",
+    "visible": "True",
+    "users": [
+        {
+            "div": "div1",
+            "dep": "dep1",
+            "pos": "pos1",
+            "name": "Firstname Lastname"
+        }
+    ],
+    "commands": [
+        {
+            "type": "singleCommand",
+            "commands": "command1 main_command1"
+        },
+        {
+            "type": "singleCommand",
+            "commands": "command2 main_command2"
+        },
+        {
+            "type": "process",
+            "name": "subProcess1",
+            "visible": "True",
+            "users": [
+                {
+                    "div": "div1",
+                    "dep": "dep1",
+                    "pos": "pos1",
+                    "name": "Firstname Lastname"
+                }
+            ],
+            "commands": [
+                {
+                    "type": "singleCommand",
+                    "commands": "command2 subProcess1_command1"
+                }
+            ]
+        },
+        {
+            "type": "process",
+            "name": "subProcess2",
+            "visible": "True",
+            "users": [],
+            "commands": [
+                {
+                    "type": "singleCommand",
+                    "commands": "command1 subProcess2_command1"
+                },
+                {
+                    "type": "singleCommand",
+                    "commands": "command2 subProcess2_command2"
+                }
+            ]
+        },
+        {
+            "type": "parallelSteps",
+            "commands": [
+                {
+                    "type": "parallelSteps",
+                    "commands": [
+                        {
+                            "type": "singleCommand",
+                            "commands": "command1 parallel_command1"
+                        },
+                        {
+                            "type": "singleCommand",
+                            "commands": "command2 parallel_command2"
+                        }
+                    ]
+                },
+                {
+                    "type": "process",
+                    "name": "_invisibleProcess",
+                    "visible": "False",
+                    "users": [],
+                    "commands": [
+                        {
+                            "type": "singleCommand",
+                            "commands": "command1 invisibleProcess_command1"
+                        },
+                        {
+                            "type": "singleCommand",
+                            "commands": "command2 invisibleProcess_command2"
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "type": "changeUsers",
+            "add": [
+                {
+                    "div": "div1",
+                    "dep": "dep1",
+                    "pos": "pos1",
+                    "name": "FirstnameB LastnameB"
+                },
+                {
+                    "div": "div1",
+                    "dep": "dep1",
+                    "pos": "pos1",
+                    "name": "FirstnameC LastnameC"
+                }
+            ],
+            "remove": [
+                {
+                    "div": "div1",
+                    "dep": "dep1",
+                    "pos": "pos1",
+                    "name": "Firstname Lastname"
+                }
+            ],
+            "currentUsers": [
+                {
+                    "div": "div1",
+                    "dep": "dep1",
+                    "pos": "pos1",
+                    "name": "FirstnameB LastnameB"
+                },
+                {
+                    "div": "div1",
+                    "dep": "dep1",
+                    "pos": "pos1",
+                    "name": "FirstnameC LastnameC"
+                }
+            ]
+        },
+        {
+            "type": "conditionSteps",
+            "condition": "condition",
+            "try": [
+                {
+                    "type": "singleCommand",
+                    "commands": "command1 try_command1"
+                },
+                {
+                    "type": "singleCommand",
+                    "commands": "command2 try_command2"
+                }
+            ],
+            "yes": [],
+            "no": [
+                {
+                    "type": "singleCommand",
+                    "commands": "command2 no_command1"
+                },
+                "retry"
+            ]
+        }
+    ],
+    "title": "example"
+}

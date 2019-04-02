@@ -1,0 +1,55 @@
+start
+    process subProcess2
+        command1 subProcess2_command1
+        command2 subProcess2_command2
+    end
+    process main
+        users
+            div1 dep1 pos1 Firstname Lastname
+        end
+
+        command1 main_command1
+        command2 main_command2
+
+        process subProcess1
+            users
+                div1 dep1 pos1 Firstname Lastname
+            end
+            command2 subProcess1_command1
+        end
+        
+        call subProcess2
+
+        parallel
+            parallel
+                command1 parallel_command1
+                command2 parallel_command2
+            end
+
+            process _invisibleProcess
+                command1 invisibleProcess_command1
+                command2 invisibleProcess_command2
+            end
+        end
+
+        change users
+            remove div1 dep1 pos1 Firstname Lastname
+            add div1 dep1 pos1 FirstnameB LastnameB
+            add div1 dep1 pos1 FirstnameC LastnameC
+        end
+
+        try
+            command1 try_command1
+            command2 try_command2
+        check condition
+            yes
+                continue
+            end
+            no
+                command2 no_command1
+                retry
+            end
+        end
+
+    end
+end
