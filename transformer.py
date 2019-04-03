@@ -211,7 +211,7 @@ startCode = time.time() #starting code timer
 init() #initializing colorama lib support (important for Windows, pointless for Linux)
 options = arguments(sys.argv[1:-1]) #receiving arguments in the options dictionary
 print("Loading Language")
-parser = Lark(open("language.lark", "r"))
+parser = Lark(open("language.lark", "r"), parser="lalr")
 
 print("Reading Code And Constructing Tree")
 start = time.time() #starting sub timer for code analysis/tree construction only
