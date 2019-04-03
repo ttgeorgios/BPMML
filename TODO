@@ -1,0 +1,12 @@
+TODO
+
+-"import" command to import other bpmml/json files
+-"as" command to name them diferently
+-"with" command to set parameters
+
+-next to start allow "with" command
+-parameters are detected by starting a string with "_"
+-allow compilation without "main" to export a LIST of processes
+-call accepts "from" command to call a process form another file
+-json file will always start with a dictionary that has "title", "parameters", "globalProcesses" and "execute" fields
+
