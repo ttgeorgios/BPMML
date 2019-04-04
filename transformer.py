@@ -2,6 +2,7 @@ from lark import Tree, Visitor, Transformer, Lark
 import json
 import time
 import os
+import re
 import sys, getopt
 from colorama import Fore, Style, init
 
@@ -11,6 +12,8 @@ class ReduceTree(Transformer):
     def command(self, args):
         command = ""
         for token in args:
+            if token in globalArgs.keys():
+                token = globalArgs[token]
             command += " " + token
         return {"type":"singleCommand", "commands":command.lstrip()}
 
@@ -21,6 +24,8 @@ class ReduceTree(Transformer):
         pos = args[2] #this is the position
         name = ""
         for token in args[3:]:
+            if token in globalArgs.keys():
+                token = globalArgs[token]
             name+= " " + token
         return {"div":div, "dep":dep, "pos":pos, "name":name.lstrip()}
 
@@ -101,6 +106,8 @@ class ReduceTree(Transformer):
                             exit() 
                     dataDict["try"] = data
                 elif currentBlock == "check":
+                    if data in globalArgs.keys():
+                        data = globalArgs[data]
                     dataDict["condition"] += " " + data
                     if args[argsPos + 1] == '\n':
                         currentBlock = ""
@@ -230,13 +237,28 @@ tree = parser.parse(readFile) # tree creation
 
 # we iterate the children of the root to save every global process to processDict
 processDict = {}
+globalArgs = {}
 for child in tree.children:
     if child != "start" and child != "end" and child !='\n':
-        name = str(child.children[1])
-        if name in processDict.keys():
-            print(Fore.RED + "Error: " + Fore.RESET +"Two processes have the same name")
-            exit()
-        processDict[name] = child
+        if child.data == "withstep":
+            for subchild in child.children:
+                if str(subchild) not in ("with", '\n'):
+                    argumentList = str(subchild).split("=")
+                    variableList = re.findall("&\w+", argumentList[1])
+                    for var in variableList:
+                        var = var.strip()
+                        if var not in globalArgs.keys():
+                            print(Fore.RED + "Error: " + Fore.RESET +"A global argument was given a non existing variable")
+                            exit()
+                        argumentList[1] = argumentList[1].replace(var, globalArgs[var]) 
+                    print(variableList)
+                    globalArgs["&" + argumentList[0].strip()] = argumentList[1].strip()
+        else:
+            name = str(child.children[1])
+            if name in processDict.keys():
+                print(Fore.RED + "Error: " + Fore.RESET +"Two processes have the same name")
+                exit()
+            processDict[name] = child
 if "main" not in processDict.keys():
     print(Fore.RED + "Error: " + Fore.RESET +" Process 'main' not found")
     exit()
