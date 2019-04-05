@@ -1,10 +1,8 @@
 TODO
 
--"import" command to import other bpmml/json files
--"as" command to name them diferently
-
 -use "with" command to change the arguments of imported bpmml files
--allow compilation without "main" to export a LIST of processes
--call accepts "from" command to call a process form another file
--json file will always start with a dictionary that has "title", "parameters", "globalProcesses" and "execute" fields
-
+-exception handling and use of metadata such as line numbers
+-relative/absolute paths testing
+-beutify and reorganise code & proper stringdocs 
+-executable conversion
+-testers and testing

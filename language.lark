@@ -5,8 +5,9 @@
 %ignore /\t/
 
 _newline: /\n/+ //define line change as one or more \n to allow empty lines 
-start: START withstep? _newline (process _newline)* END
+start: START withstep? _newline (importstep _newline)* (process _newline)* END
 withstep: /\n/* WITH /\n/* ((ARGUMENT "," /\n/*)*) ARGUMENT
+importstep: IMPORT /[-\.\w]+/ (AS /[-\.\w]+/)?
 process: PROCESS /\w+/ _newline [userstep _newline] steps END
 steps: (_step _newline)*
 _step: command
@@ -21,7 +22,7 @@ checkstep : TRY _newline steps CHECK /[-\)"\('?&\w]+/+ _newline yes _newline no 
 yes: YES _newline steps [(RETRY | ABORT) _newline] END
 no: NO _newline steps [(RETRY | ABORT) _newline] END
 parallelstep: PARALLEL _newline steps END
-callstep: CALL /\w+/
+callstep: CALL /[-\.\w]+/ (FROM /[-\.\w]+/)?
 userstep: USERS _newline (user _newline)+ END
 change_userstep: CHANGE_USERS _newline ((ADD | REMOVE) user _newline)+ END
 user: DIVISION DEPARTMENT POSITION NAME+
@@ -45,5 +46,8 @@ CALL: "call"
 END: "end"
 START: "start"
 WITH: "with"
+IMPORT: "import"
+AS: "as"
+FROM: "from"
 ARGUMENT: /\w+/ " "* "=" " "* ("&"?/\w+/ " "*)+
 COMMAND: "command1" | "command2" | "command3" //placeholders

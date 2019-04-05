@@ -1,7 +1,8 @@
 from lark import Tree, Visitor, Transformer, Lark
 import json
 import time
-import os
+from pathlib import Path, PurePath
+from subprocess import run
 import re
 import sys, getopt
 from colorama import Fore, Style, init
@@ -42,10 +43,32 @@ class ReduceTree(Transformer):
     # we transform the node by replacing it with the called process
     def callstep(self, args):
         name = args[1]
+
+        if len(args) > 2:
+            parentName = args[3]
+            if parentName not in importedProcessDict.keys():
+                print(Fore.RED + "Error: " + Fore.RESET + "Import " + Fore.YELLOW + parentName + Fore.RESET + " does not exist or was renamed with 'as' command")
+                exit()
+            if name not in importedProcessDict[parentName].keys():
+                print(Fore.RED + "Error: " + Fore.RESET + "Import " + Fore.YELLOW + parentName + Fore.RESET + " does not contain a process named: " + Fore.YELLOW + name + Fore.RESET)
+                exit()
+            if importedProcessDict[parentName][name]["commands"]:
+                return importedProcessDict[parentName][name]
+            else:
+                return '\n'
         # if the process called in not in the readyProcessList, we print an error (if the bpmml code was correct, this would never happen) 
-        if name not in readyProcessDict:
-            print(Fore.RED + "Error: " + Fore.RESET + "Process " + name + " does not exist or is defined bellow the call")
+        if name not in readyProcessDict.keys():
+            if name in importedMainDict.keys():
+                if importedMainDict[name]["commands"]:
+                    importedMainDict[name]["name"] = name
+                    return importedMainDict[name]
+                else:
+                    print(Fore.RED + "Error: " + Fore.RESET + "Import " + Fore.YELLOW + name + Fore.RESET + " is not callable as it has no 'main' process")
+                    exit()
+            print(Fore.RED + "Error: " + Fore.RESET + "Process " + Fore.YELLOW + name + Fore.RESET + " does not exist or is defined bellow the call")
             exit()
+        if not readyProcessDict[name]["commands"]:
+                return '\n'
         return readyProcessDict[name]
 
     # if a parallelstep node is read, we transform the parallelstep subtree to a dictionary.
@@ -184,9 +207,9 @@ class ReduceTree(Transformer):
 
 # a process that defines the arguments our compiler accepts (the way it works is standard for Python)
 def arguments(argv):
-    options = {"pretty": False, "visualise": False, "stylise": "", "output": "", "graphname":""}
+    options = {"pretty": False, "visualise": False, "stylise": "", "output": ""}
     try:
-        opts,args = getopt.getopt(argv, "hpv:s:o:", ["help", "pretty", "visualise", "stylise", "output"])
+        opts,args = getopt.getopt(argv, "hpvs:o:", ["help", "pretty", "visualise", "stylise", "output"])
     except getopt.GetoptError:
         print("Help List")
         exit()
@@ -198,7 +221,6 @@ def arguments(argv):
             options["pretty"] = True
         elif opt in ('-v', "--visualise"):
             options["visualise"] = True
-            options["graphname"] = arg
         elif opt in ('-s', "--stylise"):
             options["visualise"] = True
             if arg not in ("full", "minimal", "split"):
@@ -206,29 +228,31 @@ def arguments(argv):
                 exit()
             options["stylise"] = arg
         elif opt in ('-o', "--output"):
-            if arg[-1] not in ("/", "\\"): #different locales might have a problem here! 
-                print(Fore.BLUE + arg + Fore.RED + " is not a valid folder path\n" + Fore.RESET + "(Use '/' or '\\' depending on your OS)")
+            if not Path(arg).is_dir() : #different locales might have a problem here! 
+                print(Fore.BLUE + arg + Fore.RED + " is not a valid directory\n" + Fore.RESET)
                 exit()
-            options["output"] = arg
+            options["output"] = Path(PurePath(arg)).absolute()
     return options
-
 
 
 startCode = time.time() #starting code timer
 init() #initializing colorama lib support (important for Windows, pointless for Linux)
 options = arguments(sys.argv[1:-1]) #receiving arguments in the options dictionary
+compilerPath = str(Path("transformer.py").absolute())
+visualiserPath = str(Path("Graph Visualisation/visualiser.py").absolute())
 print("Loading Language")
 parser = Lark(open("language.lark", "r"), parser="lalr")
 
 print("Reading Code And Constructing Tree")
 start = time.time() #starting sub timer for code analysis/tree construction only
 infile = sys.argv[-1] #infile is the argument containing our file name/location
+fileName = Path(infile).stem
 if ".bpmml" not in infile:
     print(Fore.RED + "Invalid Input" + Fore.RESET)
     print("Help List")
     exit()
 try:
-    readFile = open(sys.argv[-1], "r").read()
+    readFile = open(infile, "r").read()
 except FileNotFoundError:
     print(Fore.BLUE + infile + Fore.RED + " does not exist!" + Fore.RESET)
     exit()
@@ -237,7 +261,10 @@ tree = parser.parse(readFile) # tree creation
 
 # we iterate the children of the root to save every global process to processDict
 processDict = {}
+readyProcessDict = {}
 globalArgs = {}
+importedProcessDict = {}
+importedMainDict = {}
 for child in tree.children:
     if child != "start" and child != "end" and child !='\n':
         if child.data == "withstep":
@@ -251,17 +278,40 @@ for child in tree.children:
                             print(Fore.RED + "Error: " + Fore.RESET +"A global argument was given a non existing variable")
                             exit()
                         argumentList[1] = argumentList[1].replace(var, globalArgs[var]) 
-                    print(variableList)
+                    #print(variableList)
                     globalArgs["&" + argumentList[0].strip()] = argumentList[1].strip()
+        elif child.data == "importstep":
+            importedName = str(child.children[1])
+            if importedName[-6:] != ".bpmml":
+                importedName += ".bpmml"
+            if not Path(importedName).is_file():
+                importedName = str(PurePath(infile).parent / importedName)
+                if not Path(importedName).is_file():
+                    print(Fore.RED + "Error: " + importedName + Fore.RESET + " does not exist")
+                    exit()
+            name = importedName[:-6]
+            if options["output"]:
+                run(["python3", compilerPath, "-p", "-o", str(options["output"]), importedName])
+                name = str(options["output"] / PurePath(importedName).stem)
+            else:
+                run(["python3", compilerPath, "-p", importedName])
+
+            importedFile = json.load(open(name + ".json"))
+            if len(child.children)>2:
+                name = str(child.children[3])
+            if name in importedProcessDict.keys():
+                print(Fore.RED + "Error: " + importedName + Fore.RESET + " is imported multiple times")
+                exit()
+            importedProcessDict[name] = {}
+            for process in importedFile["globalProcesses"]:
+                importedProcessDict[name].update({process["name"]:process})
+            importedMainDict[name] = importedFile["execute"]      
         else:
             name = str(child.children[1])
             if name in processDict.keys():
-                print(Fore.RED + "Error: " + Fore.RESET +"Two processes have the same name")
+                print(Fore.RED + "Error: " + Fore.RESET +"Two processes have the same name: " + Fore.YELLOW + name + Fore.RESET)
                 exit()
             processDict[name] = child
-if "main" not in processDict.keys():
-    print(Fore.RED + "Error: " + Fore.RESET +" Process 'main' not found")
-    exit()
 
 end = time.time() # sub timer end
 print("Code Analysis Time: %.3f sec" %(end - start))
@@ -277,26 +327,42 @@ logfilePretty.write(tree.pretty())
 print("Reducing Tree")
 start = time.time() # sub timer for transformation 
 # we transform every tree in the processDict one by one and then place it in the readyProcessDict
-readyProcessDict = {}
 for name,process in processDict.items():
     reducedTree = ReduceTree().transform(process)
+    if name in readyProcessDict.keys():
+        print(Fore.RED + "Error: " + Fore.RESET +"An import has the same name as a process: " + Fore.YELLOW + name + Fore.RESET)
+        exit()
     readyProcessDict[name] = reducedTree
-readyProcessDict["main"]["title"] = infile[:-6] # we append the title of the bpmml code file without .bpmml
-with open(options["output"] + "data.json", "w") as output:
+mainProcess = readyProcessDict.pop("main", {})
+if mainProcess:
+    mainProcess["name"] = fileName
+
+data = {"title":fileName, "globalProcesses":list(readyProcessDict.values()), "execute":mainProcess}
+if options["output"]:
+    infile = fileName + ".bpmml"
+with open(str(options["output"] / PurePath(infile[:-6] + ".json")), "w") as output:
     if options["pretty"]:
-        json.dump(readyProcessDict["main"], output, indent=4)
+        json.dump(data, output, indent=4)
     else:
-        json.dump(readyProcessDict["main"], output)
+        json.dump(data, output)
 
 end = time.time() # end of sub timer
 print("Reduction Time (+JSON): %.3f sec" %(end - start))
 
 if (options["visualise"]):
     if options["stylise"] != "":
-        os.system("python3 \"Graph Visualisation/visualiser.py\" -n '" + options["graphname"] + "' -s " + options["stylise"])
+        #os.system("python3 \"Graph Visualisation/visualiser.py\" -n '" + options["graphname"] + "' -s " + options["stylise"])
+        if options["output"]:
+            run(["python3", visualiserPath, "-o", str(options["output"]), "-s", options["stylise"], str(PurePath(infile[:-6] + ".json"))])
+        else:
+            run(["python3", visualiserPath, "-s", options["stylise"], str(PurePath(infile[:-6] + ".json"))])
     else:
-        print(options["graphname"])
-        os.system("python3 \"Graph Visualisation/visualiser.py\" -n '" + options["graphname"] + "'")
+        #print(options["graphname"])
+        #os.system("python3 \"Graph Visualisation/visualiser.py\" -n '" + options["graphname"] + "'")
+        if options["output"]:
+            run(["python3", visualiserPath, "-o", str(options["output"]), str(PurePath(infile[:-6] + ".json"))])
+        else:
+            run(["python3", visualiserPath, str(PurePath(infile[:-6] + ".json"))])
 
 #print("Writting to log")
 #logfile = open("log.txt", "w")
