@@ -1,15 +1,15 @@
 from graphviz import Digraph
 import json
 import os
+from pathlib import Path, PurePath
 import sys, getopt
-from slugify import slugify
 
 # CODE IS STILL IN EARLY DEVELOPMENT, NO COMMENTS FOR NOW
 
 def arguments(argv):
-    options = {"style":"split", "name":"", "filetype":'png'}
+    options = {"style":"split", "filetype":'png', "output":""}
     try:
-        opts,args = getopt.getopt(argv, "hn:s:", ["help", "style"])
+        opts,args = getopt.getopt(argv, "hs:f:o:", ["help", "style", "filetype", "output"])
     except getopt.GetoptError:
         print("Help List")
         exit()
@@ -22,14 +22,16 @@ def arguments(argv):
                 print("Help List")
                 exit()
             options["style"] = arg
-        elif opt in ('-n', "--name"):
-            if arg != '':
-                if arg[-4:] == ".png":
-                    arg = arg.replace(".png", "")
-                elif arg[-4:] == ".pdf":
-                    arg = arg.replace(".pdf", "")
-                    options["filetype"] = 'pdf'
-                options["name"] = slugify(arg)
+        elif opt in ('-f', "--filetype"):
+            if arg not in ("png","pdf"):
+                print("Help List")
+                exit()
+            options["filetype"]:arg
+        elif opt in ('-o', "--output"):
+            if not Path(arg).is_dir() : #different locales might have a problem here! 
+                print(arg + " is not a valid directory\n")
+                exit()
+            options["output"] = Path(PurePath(arg)).absolute()
     return options
 
 
@@ -49,11 +51,30 @@ class Graph:
         self.startingNode = startingNode
         self.data = data
         self.superGraph = graph
-        if data["users"]:
-            startingNode = self.createUsers(startingNode, data["users"], graph)
-        finalNode = self.createGraph(startingNode, data["commands"], graph)
-        graph.node("end","", shape="circle", width="0.3", style="filled", fillcolor="red3")
-        graph.edge(finalNode, "end")
+
+        if "execute" in data:
+            if not data["execute"]:
+                for entry in data["globalProcesses"]:
+                    self.counter += 1
+                    name = str(self.counter)
+                    with graph.subgraph(name='cluster_' + name) as c:
+                        c.attr(label=entry["name"])
+                        c.node(name, "", shape="none")
+                        if "users" in entry.keys() and entry["users"]:
+                                name = self.createUsers(name, entry["users"], c)
+                        endNode = self.createGraph(name, entry["commands"], c)
+                        self.counter += 1
+                        name = str(self.counter)
+                        c.node(name, "", shape="none")
+                        c.edge(endNode, name)
+            else:
+                Graph(data["execute"], startingNode, options)
+        else:
+            if data["users"]:
+                startingNode = self.createUsers(startingNode, data["users"], graph)
+            finalNode = self.createGraph(startingNode, data["commands"], graph)
+            graph.node("end","", shape="circle", width="0.3", style="filled", fillcolor="red3")
+            graph.edge(finalNode, "end")
 
     def createSimpleNode(self, name, label, g):
         g.node(name, label, shape="box", style="rounded, filled", fillcolor="yellow2")
@@ -69,7 +90,7 @@ class Graph:
         for user in users:
             userString += user["div"] + " " + user["dep"] + " " + user["pos"] + " " + user["name"] + '\n'
         if userString == '':
-            userString = "None"
+            userString = "None "
         self.counter += 1
         name = str(self.counter)
         g.node(name, userString[:-1], shape="cds", margin="0.2", fontsize="10", style="filled", fillcolor="cyan")
@@ -277,18 +298,18 @@ class Graph:
                 noend = self.createGraph("nodot" + str(self.counter), nosteps, g)
                 g.edge(noend, end)
 
-
-with open('data.json') as f:
+options = arguments(sys.argv[1:-1])
+infile = sys.argv[-1]
+with open(str(options["output"] / PurePath(infile))) as f:
     data = json.load(f)
 
-graph.node("start","", shape='circle', width="0.3", style="filled", fillcolor="palegreen1")
+if data["execute"]:
+    graph.node("start","", shape='circle', width="0.3", style="filled", fillcolor="palegreen1")
 
-options = arguments(sys.argv[1:])
 Graph(data, "start", options)
 
 graph.attr(label=data["title"])
 
-name = options["name"]
-if options["name"] == "":
-    name = "Graph"
-graph.render(filename=name, view=True, format=options["filetype"])
+if options["output"]:
+    infile = Path(infile).stem + ".json"
+graph.render(filename=str(Path(options["output"] / PurePath(infile[:-5]))), view=True, format=options["filetype"])
