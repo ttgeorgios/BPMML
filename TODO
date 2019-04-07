@@ -1,5 +1,6 @@
 TODO
 
+-complete segmentation/rework
 -exception handling and use of metadata such as line numbers
 -relative/absolute paths testing
 -beutify and reorganise code & proper stringdocs 
