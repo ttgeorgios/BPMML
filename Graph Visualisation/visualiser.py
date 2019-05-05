@@ -6,25 +6,30 @@ import sys, getopt
 
 # CODE IS STILL IN EARLY DEVELOPMENT, NO COMMENTS FOR NOW
 
+HELP = "Help List"
+VERSION = "Current Version"
 def arguments(argv):
     options = {"style":"split", "filetype":'png', "output":""}
     try:
-        opts,args = getopt.getopt(argv, "hs:f:o:", ["help", "style", "filetype", "output"])
+        opts,args = getopt.getopt(argv, "hVs:f:o:", ["help", "style", "filetype", "output", "version"])
     except getopt.GetoptError:
-        print("Help List")
+        print(HELP)
         exit()
     for opt, arg in opts:
         if opt in ('-h', "--help"):
-            print("Help List")
+            print(HELP)
+            exit()
+        elif opt == ("-V","--version"):
+            print(VERSION)
             exit()
         elif opt in ('-s', "--style"):
             if arg not in ("full", "minimal", "split"):
-                print("Help List")
+                print(HELP)
                 exit()
             options["style"] = arg
         elif opt in ('-f', "--filetype"):
             if arg not in ("png","pdf"):
-                print("Help List")
+                print(HELP)
                 exit()
             options["filetype"]:arg
         elif opt in ('-o', "--output"):
@@ -41,7 +46,7 @@ def arguments(argv):
 os.environ["PATH"] += os.pathsep + 'C:/Program Files (x86)/Graphviz2.38/bin/'
 
 graph = Digraph('G', filename='graph')
-graph.attr(rankdir='LR', ratio="compress")
+graph.attr(rankdir='LR', dpi="300")
 
 class Graph:
 
@@ -301,14 +306,22 @@ class Graph:
 options = arguments(sys.argv[1:-1])
 infile = sys.argv[-1]
 with open(str(options["output"] / PurePath(infile))) as f:
-    data = json.load(f)
+    try:
+        data = json.load(f)
+    except json.decoder.JSONDecodeError:
+        print("Invalid Json file, exiting...")
+        exit()
 
-if data["execute"]:
-    graph.node("start","", shape='circle', width="0.3", style="filled", fillcolor="palegreen1")
+try:
+    if data["execute"]:
+        graph.node("start","", shape='circle', width="0.3", style="filled", fillcolor="palegreen1")
 
-Graph(data, "start", options)
+    Graph(data, "start", options)
 
-graph.attr(label=data["title"])
+    graph.attr(label=data["title"])
+except Exception:
+    print("An unexpected error has occurred while visualising the data. Please make sure you are using a valid Json file.")
+    exit()
 
 if options["output"]:
     infile = Path(infile).stem + ".json"

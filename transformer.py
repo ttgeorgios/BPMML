@@ -5,7 +5,8 @@ from pathlib import Path, PurePath
 from console import Console
 
 class ReduceTree(Transformer):
-    def __init__(self, globalArgs, readyProcessDict, importedProcessDict, importedMainDict, console=Console()):
+    def __init__(self, fileName, globalArgs, readyProcessDict, importedProcessDict, importedMainDict, console=Console()):
+        self.fileName = fileName
         self.globalArgs = globalArgs
         self.readyProcessDict = readyProcessDict
         self.importedProcessDict = importedProcessDict
@@ -19,7 +20,7 @@ class ReduceTree(Transformer):
             if data[ampersand:] in self.globalArgs.keys():
                 return data[:ampersand] + self.globalArgs[data[ampersand:]]
             else:
-                self.console.warning("You are using & without referencing a valid global argument. " + self.console.colorName(data[ampersand:]) + " will be printed as a string.")
+                self.console.warning("You are using & without referencing a valid global argument. " + self.console.colorName(data[ampersand:]) + " will be printed as a string.", line=data.line)
         return data
 
     # if a command node is read, we transform the command subtree to a dictionary for later json conversion
@@ -28,7 +29,7 @@ class ReduceTree(Transformer):
         for token in args:
             token = self.argumentCheck(token)
             command += " " + token
-        return {"type":"singleCommand", "commands":command.lstrip()}
+        return {"type":"singleCommand", "line":args[0].line, "commands":command.lstrip()}
 
     # if a user node is read, we transform the user subtree to a dictionary for later json conversion
     def user(self, args):
@@ -39,7 +40,7 @@ class ReduceTree(Transformer):
         for token in args[3:]:
             token = self.argumentCheck(token)
             name+= " " + token
-        return {"div":div, "dep":dep, "pos":pos, "name":name.lstrip()}
+        return {"div":div, "dep":dep, "pos":pos, "name":name.lstrip(), "line":args[0].line}
 
 
     # if a steps node is read, we transform the steps subtree to a list. Note that we work bottom up so all the sub nodes are already transformed
@@ -66,9 +67,9 @@ class ReduceTree(Transformer):
             if parentName[-6:] == ".bpmml":
                 parentName = parentName[:-6]
             if parentName not in self.importedProcessDict.keys():
-                self.console.error("Import " + self.console.colorName(parentName) + " does not exist or was renamed with 'as' command")
+                self.console.error("Import " + self.console.colorName(parentName) + " does not exist or was renamed with 'as' command", line=parentName.line)
             if name not in self.importedProcessDict[parentName].keys():
-                self.console.error("Import " + self.console.colorName(parentName) + "does not contain a process named: " + self.console.colorName(name))
+                self.console.error("Import " + self.console.colorName(parentName) + " does not contain a process named: " + self.console.colorName(name), line=parentName.line)
             if self.importedProcessDict[parentName][name]["commands"]:
                 return self.importedProcessDict[parentName][name]
             else:
@@ -76,12 +77,12 @@ class ReduceTree(Transformer):
         # if the process called in not in the readyProcessList, we print an error (if the bpmml code was correct, this would never happen) 
         if name not in self.readyProcessDict.keys():
             if name in self.importedMainDict.keys():
-                if self.importedMainDict[name]["commands"]:
+                if self.importedMainDict[name]:
                     self.importedMainDict[name]["name"] = name
                     return self.importedMainDict[name]
                 else:
-                    self.console.error("Import " + self.console.colorName(name) + " is not callable as it has no 'main' process")
-            self.console.error("Process " + self.console.colorName(name) + " does not exist or is defined bellow the call")
+                    self.console.error("Import " + self.console.colorName(name) + " is not callable as it has no 'main' process", line=name.line)
+            self.console.error("Process " + self.console.colorName(name) + " does not exist or is defined bellow the call", line=name.line)
         if not self.readyProcessDict[name]["commands"]:
                 return '\n'
         return self.readyProcessDict[name]
@@ -89,12 +90,14 @@ class ReduceTree(Transformer):
     # if a parallelstep node is read, we transform the parallelstep subtree to a dictionary.
     def parallelstep(self, args):
         # we need to check and return the first node that is not a linechange as we allow empty lines
+        line = args[0].line + 1
         for data in args[2:-1]:
+            line+=1
             if str(data) != '\n':
                 for step in data:
                     if step["type"] == "changeUsers": #changing users directly in a parallel block (no process) makes no sense therefore we print an error 
-                        self.console.error("You are changing users directly within a 'parallel' node.") 
-                return {"type":"parallelSteps", "commands":data}
+                        self.console.error("You are changing users directly within a 'parallel' node.", line=step["line"]) 
+                return {"type":"parallelSteps", "line":args[0].line, "commands":data}
 
     # if a yes node is read, we replace it with the already transform children as commands of the yes block (replace it with a dictionary)
     def yes(self, args):
@@ -106,7 +109,7 @@ class ReduceTree(Transformer):
                     return dataList
                 for step in data:
                     if step["type"] == "changeUsers": #changing users directly in a yes block (no process) can cause instability so we don't allow it (might change code to allow it later)
-                        self.console.error("You are changing users directly within a 'yes' node. Use a process or change users afterwards")
+                        self.console.error("You are changing users directly within a 'yes' node. Use a process or change users afterwards", line=step["line"])
                 dataList = data
         return dataList
     # the exact same code as yes trasformation, will beautify the code on a later date
@@ -119,13 +122,13 @@ class ReduceTree(Transformer):
                     return dataList
                 for step in data:
                     if step["type"] == "changeUsers":
-                        self.console.error("You are changing users directly within a 'yes' node. Use a process or change users afterwards")
+                        self.console.error("You are changing users directly within a 'yes' node. Use a process or change users afterwards", line=step["line"])
                 dataList = data
         return dataList
 
     # if a checkstep node is read, we replace it with the dictionaries of the already transformed yes and no nodes and we also handle the try block 
     def checkstep(self, args):
-        dataDict = {"type":"conditionSteps", "condition":""} #initialised dictionary data
+        dataDict = {"type":"conditionSteps", "line":args[0].line, "condition":""} #initialised dictionary data
         currentBlock = "try" # "pointer" to the current block (iteration follows)
         argsPos = 2 # "pointer" to the current argument (iteration follows)
         answer = "yes" # points to which answer block (yes/no) we are supposed to write data next
@@ -137,7 +140,7 @@ class ReduceTree(Transformer):
                 if currentBlock == "try":
                     for step in data:
                         if step["type"] == "changeUsers": #changing users directly in a try block (no process) can cause instability so we don't allow it (might change code to allow it later)
-                            self.console.error("You are changing users directly within a 'try' node. Use a process or change users beforehand")
+                            self.console.error("You are changing users directly within a 'try' node. Use a process or change users beforehand", line=step["line"])
                     dataDict["try"] = data
                 elif currentBlock == "check":
                     data = self.argumentCheck(data)
@@ -152,7 +155,7 @@ class ReduceTree(Transformer):
 
         #if both yes and no blocks contain retry/abort then the flow of the graph will be forced to stop, so we do not allow that.
         if (dataDict["yes"] and dataDict["yes"][-1] in ("retry", "abort")) and (dataDict["no"] and dataDict["no"][-1] in ("retry", "abort")):
-            self.console.error("Both condition nodes (yes & no) include retry or abort. Graph forcibly stops.")
+            self.console.error("Both condition nodes of conditional structure (yes & no) include retry or abort. Graph forcibly stops.", line=args[0].line)
         return dataDict
 
     # if a userstep node is read, we transform the usersteps subtree to a dictionary. Note that we work bottom up so all the sub nodes are already transformed
@@ -176,7 +179,7 @@ class ReduceTree(Transformer):
                     temp = remove
                 else:
                     temp.append(token)
-        return {"type":"changeUsers", "add":add, "remove":remove}
+        return {"type":"changeUsers", "line":args[0].line, "add":add, "remove":remove}
              
 
     # if a process node is read, we worked our way to the top therefore we can now extract the json (not supporting process calling yet)
@@ -193,17 +196,21 @@ class ReduceTree(Transformer):
                 if isinstance(data, dict): #this is roundabout way of determining we are in the "user" block data
                     initialUsers = data["users"]
                     users = initialUsers.copy()
+                    for user in users:
+                        user.pop("line")
                 else:
                     for entry in data:
                         if entry["type"] == "changeUsers":
                             for user in entry["add"]:
+                                line = user.pop("line")
                                 if user in users:
-                                    self.console.warning("You are adding a user that is already in the user list. Will not re-add.")
+                                    self.console.warning("You are adding a user that is already in the user list. Will not re-add: " + self.console.colorName(user["name"]), line=line)
                                 else:
                                     users.append(user)
                             for user in entry["remove"]:
+                                line = user.pop("line")
                                 if user not in users:
-                                    self.console.warning("You are removing a user that is not in the user list. Will ignore.")
+                                    self.console.warning("You are removing a user that is not in the user list. Will ignore: " + self.console.colorName(user["name"]), line=line)
                                 else:
                                     users.remove(user)
                             entry["currentUsers"] = users.copy()  
@@ -212,4 +219,4 @@ class ReduceTree(Transformer):
                             if entry["visible"] == "False":
                                 entry["commands"].append({"type":"changeUsers", "add":[], "remove":[], "currentUsers":users.copy()})
                     if visible == "False" and users: self.console.suggestion("You are adding users to invisible processes. Consider making them visible for better organisation.")
-        return {"type":"process", "name":name, "visible":visible, "users":initialUsers, "commands":data}
+        return {"type":"process", "file":self.fileName+".bpmml", "line":args[0].line, "name":name, "visible":visible, "users":initialUsers, "commands":data}
