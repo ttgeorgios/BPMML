@@ -1,2 +1,2 @@
-# BPML
-Business Process Markup Language - A BPMN markup language 
+# BPmML
+Business Process Markup & Modelling Language - A BPMN markup language 
