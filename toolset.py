@@ -345,7 +345,7 @@ class Toolset():
 
         Arguments:
           element -- valid BPMML element (including string), is the needle 
-          data -- data -- target valid BPMML element, is the haystack
+          data -- target valid BPMML element, is the haystack
 
         Return:
           turple containing [0] -> list of all the positions within the data argument that the element was found, 

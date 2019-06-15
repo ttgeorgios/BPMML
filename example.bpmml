@@ -5,7 +5,7 @@ start
     end
     process main
         users
-            div1 dep1 pos1 Firstname Lastname
+            (div1, dep1, pos1) Firstname Lastname
         end
 
         command1 main_command1
@@ -13,7 +13,7 @@ start
 
         process subProcess1
             users
-                div1 dep1 pos1 Firstname Lastname
+                (div1, dep1, pos1) Firstname Lastname
             end
             command2 subProcess1_command1
         end
@@ -33,9 +33,9 @@ start
         end
 
         change users
-            remove div1 dep1 pos1 Firstname Lastname
-            add div1 dep1 pos1 FirstnameB LastnameB
-            add div1 dep1 pos1 FirstnameC LastnameC
+            remove (div1, dep1, pos1) Firstname Lastname
+            add (div1, dep1, pos1) FirstnameB LastnameB
+            add (div1, dep1, pos1) FirstnameC LastnameC
         end
 
         try

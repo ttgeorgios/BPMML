@@ -1,9 +1,0 @@
-TODO
-
--update wiki content
--exception handling for invalid json file (done?)
--test cases for error messages (done?)
--relative/absolute paths testing
--beutify and reorganise code & proper stringdocs(20% done)
--executable conversion
--testers and testing (some done)

@@ -1,6 +1,6 @@
-%import .division.DIVISION
-%import .department.DEPARTMENT
-%import .position.POSITION
+//%import .division.DIVISION
+//%import .department.DEPARTMENT
+//%import .position.POSITION
 %ignore " "
 %ignore COMMENT
 %ignore SCRIPT
@@ -27,12 +27,13 @@ parallelstep: PARALLEL _newline steps END
 callstep: (CALL /[-\.\w]+/ (FROM /[-\.\w]+/)?) | ((FROM /[-\.\w]+/)? CALL /[-\.\w]+/)
 userstep: USERS _newline (user _newline)+ END
 change_userstep: CHANGE_USERS _newline ((ADD | REMOVE) user _newline)+ END
-user: DIVISION DEPARTMENT POSITION NAME+
+user: "(" (ROLE ",")~2 ROLE ")" NAME+
 
 
 PROCESS: "process"
 USERS: "users"
 NAME: /[a-zA-Z&]+/ //at least one or more alphabetic characters
+ROLE: /[&\w]+/+ | "-"
 TRY: "try"
 CHECK: "check"
 YES: "yes"

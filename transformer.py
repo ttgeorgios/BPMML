@@ -1,3 +1,17 @@
+"""
+Imports:
+  from lark import Tree,Transformer, Lark
+  import json
+  import time
+  from pathlib import Path, PurePath
+  from console import Console
+  
+Classes:
+  ReduceTree(Transformer) -- transform the grammar tree by reducing the nodes one by one bottom-up
+
+Note:
+  The Transformer Class handles the nodes of the tree by naming its methods after the grammar rules therefore writting a docstring for each one is needlessly repetitive.
+"""
 from lark import Tree,Transformer, Lark
 import json
 import time
@@ -5,7 +19,29 @@ from pathlib import Path, PurePath
 from console import Console
 
 class ReduceTree(Transformer):
+    """
+    Transform the grammar tree by reducing the nodes one by one bottom-up.
+
+    Description:
+      Transformer() is Parent class.
+      Transformer class handles the nodes of the tree by naming its methods after the grammar rules.
+      Those grammar methods will be excluded from the docstring but will be commented. Study their usage at https://lark-parser.readthedocs.io/en/latest/classes/
+
+    Instance Variables:
+      fileName -- string containing the name of the code file being compiled
+      globalArgs -- dict containing the global arguments of the code file as pairs of (key)name - (value)value
+      readyProcessDict -- dict containing the already compiled global processes of the code file. Compiled global processes are dicts 
+      importedProcessDict -- dict containing the already compiled imported processes of the code file. Compiled imported processes are dicts
+      importedMainDict -- dict containing the already compiled imported main process of the code file. Compiled imported main process is a dict
+      console -- Console() object used to print data/info
+
+    Public Methods (excluding tree reduction):
+      __init__(self, fileName, globalArgs, readyProcessDict, importedProcessDict, importedMainDict, console=Console())
+      argumentCheck(self, data)
+    """
+
     def __init__(self, fileName, globalArgs, readyProcessDict, importedProcessDict, importedMainDict, console=Console()):
+        """ Initialise """
         self.fileName = fileName
         self.globalArgs = globalArgs
         self.readyProcessDict = readyProcessDict
@@ -15,6 +51,7 @@ class ReduceTree(Transformer):
         super().__init__()
 
     def argumentCheck(self, data):
+        """ Check if data contains an argument included in the globalArgs dict"""
         ampersand = data.find('&')
         if ampersand != -1:
             if data[ampersand:] in self.globalArgs.keys():
@@ -33,9 +70,9 @@ class ReduceTree(Transformer):
 
     # if a user node is read, we transform the user subtree to a dictionary for later json conversion
     def user(self, args):
-        div = args[0] #this is the division
-        dep = args[1] #this is the department
-        pos = args[2] #this is the position
+        div = self.argumentCheck(args[0]) #this is the division
+        dep = self.argumentCheck(args[1]) #this is the department
+        pos = self.argumentCheck(args[2]) #this is the position
         name = ""
         for token in args[3:]:
             token = self.argumentCheck(token)

@@ -7,36 +7,58 @@ import sys, getopt
 # CODE IS STILL IN EARLY DEVELOPMENT, NO COMMENTS FOR NOW
 # CODE IS MESSY AS FUNCTIONALITY IS THE ONLY CONCERN AT THE MOMENT, FOR DEBBUGING REASONS, AS AN IDE/GRAPHICAL-INTERFACE IS ALSO BEING SEPARATELY DEVELOPED 
 
-HELP = "Help List"
-VERSION = "Current Version"
+VERSION = "Alpha"
+HELP = "This is the help page of the BPMML visualiser (version " + VERSION + ")\n" + """
+    Command Usage:
+        visualiser.exe [options] <outfile.json>
+    Options:
+        -h, --help:
+            Display this message.
+        -V, --version:
+            Display the current version of the BPMML compiler.
+        -s, --style <mode>:
+            Run the graph visualiser to export a BPMN graph directly using a specified <mode>.
+            <mode> can be "full", "minimal", "split".
+        -f, --filetype <filetype>:
+          Export the graph in a specific filetype.
+          <filetype> can be "png", "pdf".
+        -o, --output <dir>:
+            Choose the output folder (<dir>) that the json file will be exported to.
+    Defaults:
+        -The output folder is the folder containing the BPMML codefile.
+        -The default style of the visualisation mode is "split".
+        -The default filetype of the graph is "png".
+    """
 def arguments(argv):
     options = {"style":"split", "filetype":'png', "output":""}
     try:
         opts,args = getopt.getopt(argv, "hVs:f:o:", ["help", "style", "filetype", "output", "version"])
     except getopt.GetoptError:
+        if ".bpmml" in argv[-1]:
+            arguments(argv[:-1])
         print(HELP)
-        exit()
+        sys.exit()
     for opt, arg in opts:
         if opt in ('-h', "--help"):
             print(HELP)
-            exit()
+            sys.exit()
         elif opt == ("-V","--version"):
             print(VERSION)
-            exit()
+            sys.exit()
         elif opt in ('-s', "--style"):
             if arg not in ("full", "minimal", "split"):
                 print(HELP)
-                exit()
+                sys.exit()
             options["style"] = arg
         elif opt in ('-f', "--filetype"):
             if arg not in ("png","pdf"):
                 print(HELP)
-                exit()
+                sys.exit()
             options["filetype"]:arg
         elif opt in ('-o', "--output"):
             if not Path(arg).is_dir() : #different locales might have a problem here! 
                 print(arg + " is not a valid directory\n")
-                exit()
+                sys.exit()
             options["output"] = Path(PurePath(arg)).absolute()
     return options
 
@@ -95,6 +117,7 @@ class Graph:
         userString = ''
         for user in users:
             userString += user["div"] + " " + user["dep"] + " " + user["pos"] + " " + user["name"] + '\n'
+        userString = userString.replace("- ", "")
         if userString == '':
             userString = "None "
         self.counter += 1
@@ -304,14 +327,14 @@ class Graph:
                 noend = self.createGraph("nodot" + str(self.counter), nosteps, g)
                 g.edge(noend, end)
 
-options = arguments(sys.argv[1:-1])
+options = arguments(sys.argv[1:])
 infile = sys.argv[-1]
 with open(str(options["output"] / PurePath(infile))) as f:
     try:
         data = json.load(f)
     except json.decoder.JSONDecodeError:
         print("Invalid Json file, exiting...")
-        exit()
+        sys.exit()
 
 try:
     if data["execute"]:
@@ -322,7 +345,7 @@ try:
     graph.attr(label=data["title"])
 except Exception:
     print("An unexpected error has occurred while visualising the data. Please make sure you are using a valid Json file.")
-    exit()
+    sys.exit()
 
 if options["output"]:
     infile = Path(infile).stem + ".json"
