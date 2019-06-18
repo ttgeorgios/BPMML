@@ -37,7 +37,7 @@ class Toolset():
       Code is still in develpment which could be dropped as manually editting the json file is not recommended.
     """
 
-    _CMD_LIST = ("command1", "command2", "command3")
+    _CMD_LIST = ("command1", "command2", "command3", "compose", "sign", "send", "receive", "archive", "execute")
     def __init__(self, root, globalArgs):
         """Intialise Toolset object""" 
         self.ROOT = root

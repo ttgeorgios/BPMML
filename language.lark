@@ -53,6 +53,6 @@ IMPORT: "import"
 AS: "as"
 FROM: "from"
 ARGUMENT: /\w+/ " "* "=" " "* ("&"?/\w+/ " "*)+
-COMMAND: "command1" | "command2" | "command3" //placeholders
+COMMAND: "command1" | "command2" | "command3" | "compose" | "sign" | "send" | "receive" | "archive" | "execute" //some placeholders
 COMMENT: /#.*/
 SCRIPT: "run"  /.*/ /\n/* 
